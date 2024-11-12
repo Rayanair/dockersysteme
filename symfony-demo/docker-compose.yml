@@ -1,0 +1,48 @@
+version: '3.7'
+services:
+  mysql:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: symfony
+      MYSQL_USER: symfony_user
+      MYSQL_PASSWORD: symfony_password
+    volumes:
+      - .:/app/:cached
+  php-fpm:
+    container_name: php-fpm
+    build: ./docker/php-fpm
+    ports:
+      - 9000:9001
+    volumes:
+      - .:/app/:cached
+    networks:
+      - site
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - .:/app/:cached
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.15.2
+    volumes:
+      - ./config/logstash:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+  nginx:
+    container_name: nginx
+    build: ./docker/nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - php-fpm
+    networks:
+      - site
+    volumes:
+      - .:/app/:cached
+networks:
+  site:
+  
